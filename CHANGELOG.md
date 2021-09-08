@@ -1,5 +1,13 @@
 # Change log
 
+## [2.x]
+
+### Breaking
+
+- project: minimum Java version was changed
+
+
+
 ## [1.91.0] - 2021-11-05
 
 ### Added
@@ -55,7 +63,7 @@ authentication ([#473](https://github.com/walmartlabs/concord/pull/473));
 ### Added
 
 - concord-server: ability to load user API keys from a local file
-([#457](https://github.com/walmartlabs/concord/pull/457)).
+([457](https://github.com/walmartlabs/concord/pull/457)).
 
 ### Changed
 
@@ -100,7 +108,7 @@ in `task`, `flow` and `script` steps
 
 - concord-server: ignore synthetic methods annotated with `WithTimer`
 ([#444](https://github.com/walmartlabs/concord/pull/444));
-- concord-targetplatform: update jackson-databind version to address
+-concord-targetplatform: update jackson-databind version to address
 [CVE](https://github.com/advisories/GHSA-288c-cq4h-88gq)
 ([#449](https://github.com/walmartlabs/concord/pull/449));
 - concord-server: roll back changes introduced in

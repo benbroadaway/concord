@@ -30,7 +30,7 @@
             JDK to use in the base image and all its derivatives.
             Must be a .tar.gz archive for Linux x64
          -->
-        <jdk.url>https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u292-b10/OpenJDK8U-jdk_x64_linux_hotspot_8u292b10.tar.gz</jdk.url>
+        <jdk.url>https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.11%2B9/OpenJDK11U-jdk_x64_linux_hotspot_11.0.11_9.tar.gz</jdk.url>
     </properties>
 
     <build>
@@ -83,12 +83,6 @@
             <id>docker</id>
             <properties>
                 <docker.skip>false</docker.skip>
-            </properties>
-        </profile>
-        <profile>
-            <id>jdk11</id>
-            <properties>
-                <jdk.url>https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.11%2B9/OpenJDK11U-jdk_x64_linux_hotspot_11.0.11_9.tar.gz</jdk.url>
             </properties>
         </profile>
         <profile>
