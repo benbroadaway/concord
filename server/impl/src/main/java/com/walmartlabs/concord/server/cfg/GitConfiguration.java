@@ -26,6 +26,7 @@ import org.eclipse.sisu.Nullable;
 import javax.inject.Inject;
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.Map;
 
 public class GitConfiguration implements Serializable {
 
@@ -68,6 +69,10 @@ public class GitConfiguration implements Serializable {
     @Config("git.sshTimeoutRetryCount")
     private int sshTimeoutRetryCount;
 
+    @Inject
+    @Config("git.insteadOf")
+    private Map<String, String> insteadOf;
+
     public boolean isShallowClone() {
         return shallowClone;
     }
@@ -102,5 +107,9 @@ public class GitConfiguration implements Serializable {
 
     public int getSshTimeoutRetryCount() {
         return sshTimeoutRetryCount;
+    }
+
+    public Map<String, String> getInsteadOf() {
+        return insteadOf;
     }
 }

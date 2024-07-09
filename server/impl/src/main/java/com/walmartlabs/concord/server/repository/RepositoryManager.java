@@ -70,6 +70,7 @@ public class RepositoryManager {
                 .httpLowSpeedTime(gitCfg.getHttpLowSpeedTime())
                 .sshTimeout(gitCfg.getSshTimeout())
                 .sshTimeoutRetryCount(gitCfg.getSshTimeoutRetryCount())
+                .insteadOf(gitCfg.getInsteadOf().entrySet().stream().map(e -> InsteadOfConfiguration.builder().primary(e.getValue()).alternative(e.getKey()).build()).toList())
                 .build();
 
         List<RepositoryProvider> providers = Arrays.asList(new ClasspathRepositoryProvider(), new GitCliRepositoryProvider(gitCliCfg));

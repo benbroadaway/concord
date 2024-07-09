@@ -74,8 +74,10 @@ public class GitClient {
                 init(req.destination());
             }
 
+            String updatedUrl = updateUrl(req.url(), req.secret());
             configure(req.destination());
-            configureRemote(req.destination(), updateUrl(req.url(), req.secret()));
+            configureRemote(req.destination(), updatedUrl);
+            configureInsteadOf(req.destination(), req.secret());
 
             Ref ref = getHeadRef(req.destination(), req.version().ref(), req.secret());
             configureFetch(req.destination(), getRefSpec(ref));
@@ -166,6 +168,19 @@ public class GitClient {
                 .timeout(cfg.defaultOperationTimeout())
                 .addArgs("config", "remote.origin.url", url)
                 .build());
+    }
+
+    private void configureInsteadOf(Path workDir, Secret secret) {
+        return; // TODO undo eventually
+//        cfg.insteadOf().forEach(insteadOf -> {
+//            log.info("configuring insteadOf {} -> {}", insteadOf.primary(), insteadOf.alternative());
+//            exec(Command.builder()
+//                    .workDir(workDir)
+//                    .timeout(cfg.defaultOperationTimeout())
+//                    // git config url.git@github.cache.staging.walmart.com.insteadOf 'git@fakeurl'
+//                    .addArgs("config", "url." + updateUrl(insteadOf.alternative(), secret) + ".insteadOf", updateUrl(insteadOf.primary(), secret))
+//                    .build());
+//        });
     }
 
     private void configureFetch(Path workDir, String refSpec) {
@@ -501,9 +516,7 @@ public class GitClient {
         env.put("GIT_TERMINAL_PROMPT", "0");
 
         try {
-            if (secret instanceof KeyPair) {
-                KeyPair keyPair = (KeyPair) secret;
-
+            if (secret instanceof KeyPair keyPair) {
                 key = createSshKeyFile(keyPair);
                 ssh = createUnixGitSSH(key);
 
@@ -516,18 +529,14 @@ public class GitClient {
                 }
 
                 log.info("using GIT_SSH to set credentials");
-            } else if (secret instanceof UsernamePassword) {
-                UsernamePassword userPass = (UsernamePassword) secret;
-
+            } else if (secret instanceof UsernamePassword userPass) {
                 askpass = createUnixStandardAskpass(userPass);
 
                 env.put("GIT_ASKPASS", askpass.toAbsolutePath().toString());
                 env.put("SSH_ASKPASS", askpass.toAbsolutePath().toString());
 
                 log.info("using GIT_ASKPASS to set credentials ");
-            } else if (secret instanceof BinaryDataSecret) {
-                BinaryDataSecret token = (BinaryDataSecret) secret;
-
+            } else if (secret instanceof BinaryDataSecret token) {
                 askpass = createUnixStandardAskpass(new UsernamePassword(new String(token.getData()), "".toCharArray()));
 
                 env.put("GIT_ASKPASS", askpass.toAbsolutePath().toString());

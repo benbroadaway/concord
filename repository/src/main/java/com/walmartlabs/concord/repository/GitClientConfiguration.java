@@ -24,6 +24,7 @@ import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
+import java.util.List;
 
 @Value.Immutable
 @Value.Style(jdkOnly = true)
@@ -60,6 +61,11 @@ public interface GitClientConfiguration {
     @Value.Default
     default int sshTimeoutRetryCount() {
         return 1;
+    }
+
+    @Value.Default
+    default List<InsteadOfConfiguration> insteadOf() {
+        return List.of();
     }
 
     static ImmutableGitClientConfiguration.Builder builder() {
