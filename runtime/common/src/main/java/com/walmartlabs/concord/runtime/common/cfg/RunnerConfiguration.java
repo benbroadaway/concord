@@ -122,6 +122,11 @@ public interface RunnerConfiguration {
         return DockerConfiguration.builder().build();
     }
 
+    @Value.Default
+    default boolean enableSecretCache() {
+        return false;
+    }
+
     static ImmutableRunnerConfiguration.Builder builder() {
         return ImmutableRunnerConfiguration.builder();
     }

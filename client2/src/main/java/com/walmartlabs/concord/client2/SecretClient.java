@@ -163,9 +163,8 @@ public class SecretClient {
 
         SecretsApi api = new SecretsApi(apiClient);
 
-        SecretOperationResponse response = ClientUtils.withRetry(retryCount, retryInterval,
+        return ClientUtils.withRetry(retryCount, retryInterval,
                 () -> api.createSecret(secretRequest.org(), params));
-        return response;
     }
 
     public void updateSecret(String orgName, String secretName, UpdateSecretRequest request) throws ApiException {

@@ -20,6 +20,9 @@ package com.walmartlabs.concord.runtime.v2.runner;
  * =====
  */
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.walmartlabs.concord.client2.*;
 import com.walmartlabs.concord.common.secret.BinaryDataSecret;
 import com.walmartlabs.concord.runtime.common.cfg.RunnerConfiguration;
@@ -28,11 +31,14 @@ import com.walmartlabs.concord.runtime.v2.sdk.FileService;
 import com.walmartlabs.concord.runtime.v2.sdk.SecretNotFoundException;
 import com.walmartlabs.concord.runtime.v2.sdk.SecretService;
 import com.walmartlabs.concord.sdk.Secret;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.xml.bind.DatatypeConverter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Objects;
 
 public class DefaultSecretService implements SecretService {
@@ -40,23 +46,48 @@ public class DefaultSecretService implements SecretService {
     private final SecretClient secretClient;
     private final FileService fileService;
     private final InstanceId instanceId;
+    private final LoadingCache<SecretInfo, Secret> secretCache;
+
+    record SecretInfo(String org, String name, String password, SecretEntryV2.TypeEnum type) {};
 
     @Inject
     public DefaultSecretService(RunnerConfiguration cfg, ApiClient apiClient, FileService fileService, InstanceId instanceId) {
         this.secretClient = new SecretClient(apiClient, cfg.api().retryCount(), cfg.api().retryInterval());
         this.fileService = fileService;
         this.instanceId = instanceId;
+
+        this.secretCache = CacheBuilder.newBuilder()
+                .maximumSize(cfg.enableSecretCache() ? 25 : 0)
+                .expireAfterWrite(Duration.ofSeconds(300))
+                .build( new CacheLoader<>() {
+                    @Override
+                    public Secret load(SecretInfo info) {
+                        try {
+                            return get(info.org(), info.name(), info.password(), info.type());
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException("wat");
+                        }
+                    }
+                });
+    }
+
+    /**
+     * This method aids unit test mocking
+     */
+    protected SecretClient getSecretClient() {
+        return secretClient;
     }
 
     @Override
     public String exportAsString(String orgName, String secretName, String password) throws Exception {
-        BinaryDataSecret s = get(orgName, secretName, password, SecretEntryV2.TypeEnum.DATA);
+        BinaryDataSecret s = (BinaryDataSecret) secretCache.get(new SecretInfo(orgName, secretName, password, SecretEntryV2.TypeEnum.DATA));
         return new String(s.getData());
     }
 
     @Override
     public KeyPair exportKeyAsFile(String orgName, String secretName, String password) throws Exception {
-        com.walmartlabs.concord.common.secret.KeyPair kp = get(orgName, secretName, password, SecretEntryV2.TypeEnum.KEY_PAIR);
+        com.walmartlabs.concord.common.secret.KeyPair kp =
+                (com.walmartlabs.concord.common.secret.KeyPair) secretCache.get(new SecretInfo(orgName, secretName, password, SecretEntryV2.TypeEnum.KEY_PAIR));
 
         Path tmpDir = fileService.createTempDirectory("secret-service");
 
@@ -74,13 +105,14 @@ public class DefaultSecretService implements SecretService {
 
     @Override
     public UsernamePassword exportCredentials(String orgName, String secretName, String password) throws Exception {
-        com.walmartlabs.concord.common.secret.UsernamePassword up = get(orgName, secretName, password, SecretEntryV2.TypeEnum.USERNAME_PASSWORD);
+        com.walmartlabs.concord.common.secret.UsernamePassword up =
+                (com.walmartlabs.concord.common.secret.UsernamePassword) secretCache.get(new SecretInfo(orgName, secretName, password, SecretEntryV2.TypeEnum.USERNAME_PASSWORD));
         return UsernamePassword.of(up.getUsername(), new String(up.getPassword()));
     }
 
     @Override
     public Path exportAsFile(String orgName, String secretName, String password) throws Exception {
-        BinaryDataSecret bds = get(orgName, secretName, password, SecretEntryV2.TypeEnum.DATA);
+        BinaryDataSecret bds = (BinaryDataSecret) secretCache.get(new SecretInfo(orgName, secretName, password, SecretEntryV2.TypeEnum.DATA));
 
         Path p = fileService.createTempFile("secret-service-file", ".bin");
         Files.write(p, bds.getData());
@@ -139,7 +171,7 @@ public class DefaultSecretService implements SecretService {
 
     private <T extends Secret> T get(String orgName, String secretName, String password, SecretEntryV2.TypeEnum type) throws Exception {
         try {
-            return secretClient.getData(orgName, secretName, password, type);
+            return getSecretClient().getData(orgName, secretName, password, type);
         } catch (com.walmartlabs.concord.client2.SecretNotFoundException e) {
             throw new SecretNotFoundException(e.getOrgName(), e.getSecretName());
         }
